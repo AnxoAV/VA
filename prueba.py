@@ -50,12 +50,12 @@ def adjustIntensity(inImage,inRange=[],outRange=[0,1]):
 def equalizeIntensity(inImage,nBins=256):
     height,width = inImage.shape[:2]
 
-    hist = cv.calcHist([inImage],[0],None,[nBins],[0,256])
+    hist = cv.calcHist([np.uint8(inImage * 255)],[0],None,[nBins],[0,256])
     hist_acum = np.cumsum(hist)
 
     t = ((hist_acum/(height*width))*255)
 
-    outImage = t[inImage]
+    outImage = t[np.uint8(inImage * 255)]
 
     return outImage
 
@@ -98,7 +98,7 @@ def gaussKernel1D(sigma):
 #Filtro de suavizado Gaussiano
 def gaussianFilter(inImage,sigma):
     kernel = gaussKernel1D(sigma)
-    kernel2D = kernel[np.newaxis,:]     #PREGUNTAR
+    kernel2D = kernel[np.newaxis,:] #PREGUNTAR
     tmpImage = filterImage(inImage,kernel2D)
     outImage = filterImage(tmpImage,kernel2D.reshape(-1,1))
 
@@ -127,46 +127,56 @@ def medianFilter(inImage,filterSize):
     
     return outImage
 
+
+#---------TESTS---------
+#Test para probar el algoritmo de alteración del rango dinámico
+def testAdjustIntensity():
+    inImage = cv.imread('entradas/gato.jpeg',cv.IMREAD_GRAYSCALE)
+    inImageNorm = inImage / 255.0
+
+    outImage = adjustIntensity(inImageNorm,[],[0,1])
+
+    cv.imwrite('salidas/imagen_rdinamico.jpg',np.uint8(outImage * 255))
+
+    
+#Test para probar el algoritmo de ecualización de histograma
+def testEqualizeIntensity():
+    inImage = cv.imread('entradas/tucan.jpeg',cv.IMREAD_GRAYSCALE)
+    inImageNorm = inImage / 255.0
+
+    outImage = equalizeIntensity(inImageNorm) #Se pueden cambiar los nBins poniendo un segundo parámetro, por defecto nBins = 256
+
+    cv.imwrite('salidas/imagen_ecualizada.jpg',outImage)
+
+#Test para probar el suavizado Gaussiano bidimensional
+def testgaussianFilter():
+    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
+    inImageNorm = inImage / 255.0
+    sigma = 1
+
+    outImage = gaussianFilter(inImageNorm,sigma)
+
+    cv.imwrite('salidas/imagen_Gauss.jpg',np.uint8(outImage * 255))
+
 #Test para probar el filtro de medianas
 def testMedianFilter():
-    inImage = cv.imread('ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
     inImageNorm = inImage / 255.0
     filterSize = 7
 
     outImage = medianFilter(inImageNorm,filterSize)
 
-    cv.imwrite('imagen_medianas.jpg',np.uint8(outImage * 255))        
+    cv.imwrite('salidas/imagen_medianas.jpg',np.uint8(outImage * 255))          
 
 
 def main():
-    inImage = cv.imread('ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
-
-    inImageNorm = inImage/255.0
-
-    hist = cv.calcHist([np.uint8(inImageNorm * 255)],[0],None,[256],[0,256])
-
-    outImage = adjustIntensity(inImageNorm,[],[0,1])
-    outImage2 = equalizeIntensity(inImage)
-
-    kernel = np.array([[1,1,1],
-                       [1,1,1],
-                       [1,1,1]])/9.0
-
-
-    outImage3 = filterImage(inImageNorm,kernel)
-
-    histdinam = cv.calcHist([np.uint8(outImage * 255)],[0],None,[256],[0,256])
-    histequal = cv.calcHist([np.uint8(outImage2 * 255)],[0],None,[256],[0,256])
-
-
-    outImage4 = gaussianFilter(inImageNorm,2)
-
     #dibujarHist(hist,histequal)
 
-    cv.imwrite('imagen_rdinamico.jpg',np.uint8(outImage * 255))
-    cv.imwrite('imagen_ecualizada.jpg',outImage2)
-    cv.imwrite('imagen_filtrada.jpg',np.uint8(outImage3 * 255))
-    cv.imwrite('imagen_Gauss.jpg',np.uint8(outImage4 * 255))
+    testAdjustIntensity()
+
+    testEqualizeIntensity()
+
+    testgaussianFilter()
     
     testMedianFilter()
 
