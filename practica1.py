@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv 
 import matplotlib.pyplot as plt
 import math
+import scipy.signal
 
 #Alteración del rango dinámico
 def adjustIntensity(inImage,inRange=[],outRange=[0,1]):
@@ -144,148 +145,86 @@ def generarImagen():
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     ])
 
+    matriz3 = np.array([
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
+        [0,0,1,1,1,1,0,0,1,1,1,1,1,1,0,0],
+        [0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0],
+        [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0],
+        [0,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0],
+        [0,0,0,1,0,0,0,0,0,1,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+        [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ])
+
+    matriz4 = np.array([
+        [1,1,1,1,1,1,1],
+        [1,1,1,0,0,1,1],
+        [1,1,0,0,0,0,1],
+        [1,1,0,0,0,0,1],
+        [1,1,1,0,0,1,1],
+        [1,1,1,0,1,1,1],
+        [1,1,1,1,1,1,1]
+    ])
+
     matriz = matriz * 255
     matriz2 = matriz2 * 255
-    cv.imwrite('entradas/cierre.png',matriz2,[cv.IMWRITE_PNG_COMPRESSION,0])
-
-#Función auxiliar para obtener grupos de tuplas en la función erode
-def agrupar_tuplas(lista, tamano_grupo):
-    grupos = []
-    grupo_actual = []
-    
-    for elemento in lista:
-        grupo_actual.append(elemento)
-        
-        if len(grupo_actual) == tamano_grupo:
-            grupos.append(grupo_actual)
-            grupo_actual = []
-
-    return grupos
-
-#Función auxiliar que devuelve la lista de coordenadas en donde existe un 1
-def get1(matrix):
-    filas,columnas = matrix.shape[:2]
-    list1 = []
-    for i in range(filas):
-        for j in range(columnas):
-            if matrix[i][j] == 1:
-                list1.append((i,j))
-    
-    return list1
+    matriz3 = matriz3 * 255
+    matriz4 = matriz4 * 255
+    cv.imwrite('entradas/hit_or_miss2.png',matriz4,[cv.IMWRITE_PNG_COMPRESSION,0])
 
 #Operadores morfológicos: erosión
-def erode(inImage,SE,center = []):
-    height,width = inImage.shape[:2]
-    P,Q = SE.shape
-
-    listCoords = []
-    tmpCoords = []
-    newCoords = []
-
-    inImageOnes = get1(inImage)
-    SEOnes = get1(SE)
-
-    outImage = np.zeros((height,width))
-
+def erode(inImage, SE, center = []):
     if not center:
-        center.append(P // 2)
-        center.append(Q // 2)
-
-        for i in range(len(SEOnes)):
-            newCoords.append((SEOnes[i][0] - center[0],SEOnes[i][1] - center[1]))
-        for i in range(len(inImageOnes)):
-            tmpCoords.append(inImageOnes[i])
-            for j in range(len(newCoords)):
-                tmpCoords.append((newCoords[j][0] + inImageOnes[i][0], newCoords[j][1] + inImageOnes[i][1]))
-
-        grupos = agrupar_tuplas(tmpCoords,len(newCoords) + 1)
-
-        for i in range(len(grupos)):
-            cnt = 0
-            for j in range(1,len(newCoords)+1):
-                if(grupos[i][j] in inImageOnes):
-                    cnt = cnt + 1
-            if cnt == len(newCoords):
-                listCoords.append(grupos[i][0])
-
-        for i in range(height):
-            for j in range(width):
-                if (i,j) in listCoords:
-                    outImage[i][j] = 1
+        center = [(SE.shape[0] // 2), (SE.shape[1] // 2)]
     else:
-        centerx = center[0]
-        centery = center[1]
+        center = [center[0], center[1]]
 
-        for i in range(len(SEOnes)):
-            newCoords.append((SEOnes[i][0] - centerx,SEOnes[i][1] - centery))
+    outImage = np.copy(inImage)
 
-        for i in range(len(inImageOnes)):
-            tmpCoords.append(inImageOnes[i])
-            for j in range(len(newCoords)):
-                tmpCoords.append((newCoords[j][0] + inImageOnes[i][0], newCoords[j][1] + inImageOnes[i][1]))
-
-        grupos = agrupar_tuplas(tmpCoords,len(newCoords) + 1)
-
-        for i in range(len(grupos)):
-            cnt = 0
-            for j in range(1,len(newCoords)+1):
-                if(grupos[i][j] in inImageOnes):
-                    cnt = cnt + 1
-            if cnt == len(newCoords):
-                listCoords.append(grupos[i][0])
-
-        for i in range(height):
-            for j in range(width):
-                if (i,j) in listCoords:
-                    outImage[i][j] = 1
-
+    for i in range(inImage.shape[0]):
+        for j in range(inImage.shape[1]):
+            if inImage[i, j] == 1:
+                for x in range(SE.shape[0]):
+                    for y in range(SE.shape[1]):
+                        if SE[x, y] == 1:
+                            nx, ny = i + x - center[0], j + y - center[1]
+                            if nx < 0 or ny < 0 or nx >= inImage.shape[0] or ny >= inImage.shape[1]:
+                                continue
+                            if inImage[nx, ny] != 1:
+                                outImage[i, j] = 0
+                                break
     return outImage
 
 #Operadores morfológicos: dilatación
-def dilate(inImage,SE,center = []):
-    height,width = inImage.shape[:2]
-    P,Q = SE.shape
-
-    listCoords = []
-    newCoords = []
-
-    inImageOnes = get1(inImage)
-    SEOnes = get1(SE)
-
-    outImage = np.zeros((height,width))
+def dilate(inImage, SE, center = []):
 
     if not center:
-        center.append(P//2)
-        center.append(Q//2)
-
-        for i in range(len(SEOnes)):
-            newCoords.append((SEOnes[i][0] - center[0],SEOnes[i][1] - center[1]))
-
-        for i in range(len(newCoords)):
-            for j in range(len(inImageOnes)):
-                listCoords.append((newCoords[i][0] + inImageOnes[j][0], newCoords[i][1] + inImageOnes[j][1]))
-
-        for i in range(height):
-                for j in range(width):
-                    if (i,j) in listCoords:
-                        outImage[i][j] = 1        
+        center = [(SE.shape[0] // 2), (SE.shape[1] // 2)]
     else:
-        centerx = center[0]
-        centery = center[1]
+        center = [center[0], center[1]]
 
-        for i in range(len(SEOnes)):
-            newCoords.append((SEOnes[i][0] - centerx,SEOnes[i][1] - centery))
+    outImage = np.copy(inImage)
 
-        for i in range(len(newCoords)):
-            for j in range(len(inImageOnes)):
-                listCoords.append((newCoords[i][0] + inImageOnes[j][0], newCoords[i][1] + inImageOnes[j][1]))
-
-        for i in range(height):
-                for j in range(width):
-                    if (i,j) in listCoords:
-                        outImage[i][j] = 1  
-
+    for i in range(inImage.shape[0]):
+        for j in range(inImage.shape[1]):
+            if inImage[i, j] == 1:
+                for x in range(SE.shape[0]):
+                    for y in range(SE.shape[1]):
+                        if SE[x, y] == 1:
+                            nx, ny = i + x - center[0], j + y - center[1]
+                            if nx < 0 or ny < 0 or nx >= inImage.shape[0] or ny >= inImage.shape[1]:
+                                continue
+                            outImage[nx, ny] = 1
     return outImage
+
 
 #Operadores morfológicos: apertura
 def opening(inImage, SE, center = []):
@@ -300,10 +239,98 @@ def closing(inImage, SE, center = []):
 
     return outImage
 
+def getComp(inImage):
+    height,width = inImage.shape[:2]
+
+    outImage = 1 - inImage
+
+    return outImage
+
+
+def hit_or_miss(inImage, objSEj, bgSE, center = []):
+    P,Q = objSEj.shape[:2]
+
+    # for i in range(P):
+    #     for j in range(Q):
+    #         if (objSEj[i][j] == 1 and bgSE[i][j] == 1):
+    #             print("Error: elementos estructurates incoherentes")
+    #             return
+
+    inImageComp = getComp(inImage)
+
+    hit = getComp(erode(inImageComp,objSEj,[0,1]))
+    miss = erode(inImage,bgSE,[1,0])
+    
+
+    print("-----HIT-----")
+    print(hit)
+
+    print("-----MISS-----")
+    print(miss)
+
+    outImage = np.logical_and(hit,miss)
+
+    return outImage
+
+def gradientImage(inImage, operator):
+    if operator == 'Roberts':
+        op_gx = np.array([
+            [-1,0],
+            [0,1]
+        ]).astype(np.uint8)
+
+        op_gy = np.array([
+            [0,-1],
+            [1,0]
+        ]).astype(np.uint8)
+    elif operator == 'CentralDiff':
+        op_gx = np.array([
+           [-1,0,1] 
+        ]).astype(np.uint8)
+
+        op_gy = np.array([
+            [-1],
+            [0],
+            [1]
+        ]).astype(np.uint8)
+    elif operator == 'Prewitt':
+        op_gx = np.array([
+            [-1,0],1,
+            [-1,0,1],
+            [-1,0,1]
+        ]).astype(np.uint8)
+
+        op_gy = np.array([
+            [-1,-1,-1],
+            [0,0,0],
+            [1,1,1]
+        ]).astype(np.uint8)
+    elif operator == 'Sobel':
+        op_gx = np.array([
+            [-1,0,1],
+            [-2,0,2],
+            [-1,0,1]
+        ]).astype(np.uint8)
+
+        op_gy = np.array([
+            [-1,-2,-1],
+            [0,0,0],
+            [1,2,1]
+        ]).astype(np.uint8)
+
+    else:
+        raise ValueError("Operador no válido. Debe ser Roberts, CentralDiff, Prewitt o Sobel")
+
+    gx = filterImage(inImage,op_gx)
+    gy = filterImage(inImage,op_gy)
+
+    return gx,gy
+
 #---------TESTS---------
 #Test para probar el algoritmo de alteración del rango dinámico
 def testAdjustIntensity():
-    inImage = cv.imread('entradas/gato.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/grays.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
 
@@ -311,10 +338,11 @@ def testAdjustIntensity():
 
     cv.imwrite('salidas/imagen_rdinamico.jpg',np.uint8(outImage * 255))
 
-    
 #Test para probar el algoritmo de ecualización de histograma
 def testEqualizeIntensity():
     inImage = cv.imread('entradas/tucan.jpeg',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
     inImageNorm = inImage / 255.0
 
     outImage = equalizeIntensity(inImageNorm) #Se pueden cambiar los nBins poniendo un segundo parámetro, por defecto nBins = 256
@@ -324,6 +352,8 @@ def testEqualizeIntensity():
 #Test para probar el suavizado Gaussiano bidimensional
 def testgaussianFilter():
     inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
     inImageNorm = inImage / 255.0
     sigma = 2
 
@@ -334,6 +364,8 @@ def testgaussianFilter():
 #Test para probar el filtro de medianas
 def testMedianFilter():
     inImage = cv.imread('entradas/ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
     inImageNorm = inImage / 255.0
     filterSize = 3
 
@@ -343,6 +375,7 @@ def testMedianFilter():
 
 def testDilate():
     inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
         [1,1,1],
@@ -353,12 +386,13 @@ def testDilate():
     center = [0,0]
 
     inImageNorm = inImage / 255
-    outImage = dilate(inImageNorm,kernel)
+    outImage = dilate2(inImageNorm,kernel)
 
     cv.imwrite('salidas/imagen_dilatacion.jpg',outImage * 255) 
 
 def testErode():
     inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
         [1,1,1],
@@ -372,10 +406,11 @@ def testErode():
 
     outImage = erode(inImageNorm,kernel)
 
-    cv.imwrite('salidas/imagen_erosion.jpg',outImage * 255) 
+    cv.imwrite('salidas/imagen_erosion.jpg',outImage * 255)  
 
 def testOpening():
     inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
         [1,1,1],
@@ -393,6 +428,7 @@ def testOpening():
 
 def testClosing():
     inImage = cv.imread('entradas/cierre.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
         [1,1,1],
@@ -407,6 +443,45 @@ def testClosing():
     outImage = closing(inImageNorm,kernel)
 
     cv.imwrite('salidas/imagen_cierre.jpg',outImage * 255) 
+
+def testHitOrMiss():
+    inImage = cv.imread('entradas/hit_or_miss2.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+    
+    inImageNorm = inImage // 255
+
+    objSEj = np.array([
+        [1,1],
+        [0,1]
+    ])
+
+    bgSE = np.array([
+        [0,0],
+        [1,0]
+    ])
+
+    outImage = hit_or_miss(inImageNorm,objSEj,bgSE)
+
+    cv.imwrite('salidas/imagen_hit_or_miss.jpg',outImage * 255) 
+
+def normalizeImage(inImage):
+    min = np.min(inImage)
+    max = np.max(inImage)
+
+    inImageNorm = 2 * ((inImage - min) / (max - min)) -1 
+
+    return inImageNorm
+
+def testGradientImage():
+    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
+    inImageNorm = normalizeImage(inImage)
+
+    gx,gy = gradientImage(inImageNorm,'Roberts')
+
+    cv.imwrite('salidas/imagen_gx.jpg',gx) 
+    cv.imwrite('salidas/imagen_gy.jpg',gy)
 
 def main():
 
@@ -424,7 +499,13 @@ def main():
 
     # testOpening()
 
-    testClosing()
+    # testClosing()
+    
+     testHitOrMiss()
+
+    # testGradientImage()
+    
+
 
 if __name__ == "__main__":
     main()
