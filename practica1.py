@@ -44,20 +44,11 @@ def filterImage(inImage,kernel):
     P,Q = kernel.shape
     height,width = inImage.shape[:2]
 
-    outImage = np.zeros((height,width))
+    outImage = np.zeros((height - P + 1, width - Q + 1))
 
-    for i in range(height):
-        for j in range(width):
-            tmp = 0
-            for k in range(P):
-                for l in range(Q):
-                    x = i - (P//2) + k
-                    y = j - (Q//2) + l
-
-                    if x >= 0 and x < height and y >= 0 and y < width:
-                        tmp += inImage[x,y] * kernel[k,l]
-
-            outImage[i,j] = tmp
+    for i in range(outImage.shape[0]):
+        for j in range(outImage.shape[1]):
+            outImage[i,j] = np.sum(inImage[i:i+P,j:j+Q] * kernel)
 
     return outImage
 
@@ -411,15 +402,7 @@ def hit_or_miss(inImage, objSEj, bgSE, center = []):
     inImageComp = getComp(inImage)
 
     hit = getComp(erode(inImageComp,objSEj,[0,1]))
-    #miss = erode(inImage,objSEj,[1,0])
-    miss = cv.erode(inImage,objSEj,anchor = (0,1))
-    
-
-    print("-----HIT-----")
-    print(hit)
-
-    print("-----MISS-----")
-    print(miss)
+    miss = erode(inImage,objSEj,[1,0])
 
     outImage = intersec(hit,miss)
 
@@ -480,6 +463,31 @@ def gradientImage(inImage, operator):
 
     return gx,gy
 
+def magnitud(gx,gy):
+    height,width = gx.shape[:2]
+
+    outImage = np.zeros((height,width))
+
+    for i in range(height):
+        for j in range(width):
+            outImage[i,j] = math.sqrt(pow(gx[i,j],2) + pow(gy[i,j],2))
+
+    return outImage
+
+def LoG(inImage, sigma):
+
+    kernel = np.array([
+        [0,-1,0],
+        [-1,4,-1],
+        [0,-1,0]
+    ])
+    
+    tmpImage = gaussianFilter(inImage,sigma)
+
+    outImage = filterImage(tmpImage,kernel)
+
+    return outImage
+
 #---------TESTS---------
 #Test para probar el algoritmo de alteración del rango dinámico
 def testAdjustIntensity():
@@ -490,22 +498,22 @@ def testAdjustIntensity():
 
     outImage = adjustIntensity(inImageNorm,[],[0,1])
 
-    cv.imwrite('salidas/imagen_rdinamico.jpg',np.uint8(outImage * 255))
+    cv.imwrite('salidas/imagen_rdinamico.png',np.uint8(outImage * 255))
 
 #Test para probar el algoritmo de ecualización de histograma
 def testEqualizeIntensity():
-    inImage = cv.imread('entradas/tucan.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/tucan.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
 
     outImage = equalizeIntensity(inImageNorm) #Se pueden cambiar los nBins poniendo un segundo parámetro, por defecto nBins = 256
 
-    cv.imwrite('salidas/imagen_ecualizada.jpg',outImage)
+    cv.imwrite('salidas/imagen_ecualizada.png',outImage)
 
 #Test para probar el suavizado Gaussiano bidimensional
 def testgaussianFilter():
-    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
@@ -513,11 +521,11 @@ def testgaussianFilter():
 
     outImage = gaussianFilter(inImageNorm,sigma)
 
-    cv.imwrite('salidas/imagen_Gauss.jpg',np.uint8(outImage * 255))
+    cv.imwrite('salidas/imagen_Gauss.png',np.uint8(outImage * 255))
 
 #Test para probar el filtro de medianas
 def testMedianFilter():
-    inImage = cv.imread('entradas/ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/ruidoimpulsional.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
@@ -525,7 +533,7 @@ def testMedianFilter():
 
     outImage = medianFilter(inImageNorm,filterSize)
 
-    cv.imwrite('salidas/imagen_medianas.jpg',np.uint8(outImage * 255))  
+    cv.imwrite('salidas/imagen_medianas.png',np.uint8(outImage * 255))  
 
 #Test para probar la erosión en una imagen
 def testDilate():
@@ -543,7 +551,7 @@ def testDilate():
     inImageNorm = inImage / 255
     outImage = dilate(inImageNorm,kernel)
 
-    cv.imwrite('salidas/imagen_dilatacion.jpg',outImage * 255) 
+    cv.imwrite('salidas/imagen_dilatacion.png',outImage * 255) 
 
 #Test para probar la dilatación en una imagen
 def testErode():
@@ -562,7 +570,7 @@ def testErode():
 
     outImage = erode(inImageNorm,kernel)
 
-    cv.imwrite('salidas/imagen_erosion.jpg',outImage * 255)  
+    cv.imwrite('salidas/imagen_erosion.png',outImage * 255)  
 
 #Test para probar la apertura en una imagen
 def testOpening():
@@ -581,7 +589,7 @@ def testOpening():
 
     outImage = opening(inImageNorm,kernel)
 
-    cv.imwrite('salidas/imagen_apertura.jpg',outImage * 255)
+    cv.imwrite('salidas/imagen_apertura.png',outImage * 255)
 
 #Test para probar el cierre en una imagen
 def testClosing():
@@ -600,11 +608,11 @@ def testClosing():
 
     outImage = closing(inImageNorm,kernel)
 
-    cv.imwrite('salidas/imagen_cierre.jpg',outImage * 255) 
+    cv.imwrite('salidas/imagen_cierre.png',outImage * 255) 
 
 #Test para probar la transformada hit-or-miss
 def testHitOrMiss():
-    inImage = cv.imread('entradas/hit_or_miss2.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/image.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
     
     inImageNorm = inImage // 255
@@ -621,7 +629,7 @@ def testHitOrMiss():
 
     outImage = hit_or_miss(inImageNorm,objSEj,bgSE)
 
-    cv.imwrite('salidas/imagen_hit_or_miss.jpg',outImage * 255) 
+    cv.imwrite('salidas/imagen_hit_or_miss.png',outImage * 255) 
 
 #Función auxiliar para normalizar una imagen al rango [-1,1]
 def normalizeImage(inImage):
@@ -632,42 +640,45 @@ def normalizeImage(inImage):
 
     return inImageNorm
 
+def normalizeSobel(inImage):
+    min_val = inImage.min()  # Encuentra el valor mínimo en la imagen
+    max_val = inImage.max()  # Encuentra el valor máximo en la imagen
+    new_max = 2
+    new_min = -2
+    # Normaliza la imagen al nuevo rango [-2, 2]
+    normalized_image = ((inImage - min_val) / (max_val - min_val)) * (new_max - new_min) + new_min
+
+    return normalized_image
+
 def testGradientImage():
-    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica2.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
+    inImageNorm = inImage / 255
+
+    operator = 'Sobel'
+
+    gx,gy = gradientImage(inImageNorm,operator)
+
+    outImage = magnitud(gx,gy)
+
+    cv.imwrite('salidas/imagen_gx_' + operator + '.png',gx * 255) 
+    cv.imwrite('salidas/imagen_gy_' + operator + '.png',gy * 255)
+    cv.imwrite('salidas/imagen_magnitud_' + operator + '.png',outImage * 255)
+
+def testLoG():
+    inImage = cv.imread('entradas/circles.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = normalizeImage(inImage)
 
-    operator = 'CentralDiff'
+    outImage = LoG(inImageNorm,1.5)
 
-    gx,gy = gradientImage(inImageNorm,operator)
-
-    cv.imwrite('salidas/imagen_gx_' + operator + '.jpg',gx * 255) 
-    cv.imwrite('salidas/imagen_gy_' + operator + '.jpg',gy * 255)
-
-
-# def testDilateMio():
-#     inImage = cv.imread('entradas/image.png',cv.IMREAD_GRAYSCALE)
-#     assert inImage is not None, "Error: No se pudo cargar la imágen"
-    
-#     inImageNorm = inImage // 255
-
-#     kernel = np.array([
-#         [1,1],
-#         [1,1]
-#     ])
-
-#     outImage = erode(getComp(inImageNorm),kernel)
-#     outImage2 = cv.erode(getComp(inImageNorm),kernel)
-
-#     cv.imwrite('salidas/pruebaerode.jpg',outImage * 255) 
-#     cv.imwrite('salidas/pruebaerode2.jpg',outImage2 * 255) 
-
-
+    cv.imwrite('salidas/imagen_LoG.png',outImage * 255) 
 
 def main():
 
-    # testAdjustIntensity()
+    testAdjustIntensity()
 
     # testEqualizeIntensity()
 
@@ -685,7 +696,9 @@ def main():
     
     # testHitOrMiss()
 
-    testGradientImage()
+    # testGradientImage()
+
+    # testLoG()
     
 
 
