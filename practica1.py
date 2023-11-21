@@ -40,15 +40,17 @@ def equalizeIntensity(inImage,nBins=256):
     return outImage
 
 #Filtro espacial de suavizado
-def filterImage(inImage,kernel):
-    P,Q = kernel.shape
-    height,width = inImage.shape[:2]
+def filterImage(inImage, kernel):
+    P, Q = kernel.shape
+    height, width = inImage.shape[:2]
 
-    outImage = np.zeros((height - P + 1, width - Q + 1))
+    inImage_padded = np.pad(inImage, ((P // 2, P // 2), (Q // 2, Q // 2)), mode='edge')
 
-    for i in range(outImage.shape[0]):
-        for j in range(outImage.shape[1]):
-            outImage[i,j] = np.sum(inImage[i:i+P,j:j+Q] * kernel)
+    outImage = np.zeros((height, width))
+
+    for i in range(height):
+        for j in range(width):
+            outImage[i, j] = np.sum(inImage_padded[i:i+P, j:j+Q] * kernel)
 
     return outImage
 
@@ -59,17 +61,17 @@ def gaussKernel1D(sigma):
     centro = (N - 1) // 2
 
     for i in range(N):
-        #kernel[i] = np.exp(-(x - centro) ** 2) / (2 * sigma **2)  PREGUNTAR
+        #kernel[i] = np.exp(-(i - centro) ** 2) / (2 * sigma **2)  PREGUNTAR
         kernel[i] = (1.0 / (math.sqrt(2 * math.pi * sigma))) * math.exp(-((i-centro) ** 2)) / (2 * sigma ** 2)
 
-    kernel /= np.sum(kernel)  #Preguntar también
+    kernel /= np.sum(kernel)
 
     return kernel
 
 #Filtro de suavizado Gaussiano
 def gaussianFilter(inImage,sigma):
     kernel = gaussKernel1D(sigma)
-    kernel2D = kernel[np.newaxis,:] #PREGUNTAR
+    kernel2D = kernel[np.newaxis,:]
     tmpImage = filterImage(inImage,kernel2D)
     outImage = filterImage(tmpImage,kernel2D.reshape(-1,1))
 
@@ -474,6 +476,7 @@ def magnitud(gx,gy):
 
     return outImage
 
+#Filtro Laplaciano de Gaussiano
 def LoG(inImage, sigma):
 
     kernel = np.array([
@@ -487,6 +490,55 @@ def LoG(inImage, sigma):
     outImage = filterImage(tmpImage,kernel)
 
     return outImage
+
+#Función auxiliar para calcular la supresión no máxima en Canny
+def notMaxSupp(mag,direc):
+    mag_supp = np.zeros_like(mag)
+
+    for i in range(1,mag.shape[0]-1):
+        for j in range(1,mag.shape[1]-1):
+            direction = direc[i,j]
+            m1,m2 = mag[i+1,j],mag[i-1,j]
+
+            if((direction <= np.pi/4 and direction >= -np.pi/4) or (direction >= 3*np.pi/4) or (direction <= -3*np.pi/4)):
+                m1,m2 = mag[i,j+1],mag[i,j-1]
+
+            if mag[i,j] >= m1 and mag[i,j] >= m2:
+                mag_supp[i,j] = mag[i,j]
+    
+    return mag_supp
+
+#Detector de bordes de Canny
+def edgeCanny(inImage,sigma,tlow,thigh):
+    #Paso 1: Aplicamos filtro gaussiano
+    tmpImage = gaussianFilter(inImage,sigma)
+
+    #Paso 2: Obtener componentes gx y gy de la imagen y calcular la magnitud y la dirección
+    gx,gy = gradientImage(inImage,'Sobel')
+    mag = np.sqrt(gx**2 + gy**2)
+    direc = np.arctan2(gy,gx)
+
+    #Paso 3: Supresión no máxima
+    mag_supp = notMaxSupp(mag,direc)
+
+    #Paso 4: Umbral de histéresis
+    strong = mag_supp > thigh 
+    weak = (mag_supp >= tlow) & (mag_supp <= thigh)
+
+    outImage = np.zeros_like(mag_supp)
+
+    outImage[strong] = 1
+
+    for i in range(1, outImage.shape[0] - 1):
+        for j in range(1 , outImage.shape[1] - 1):
+            if weak[i,j]:
+                if(outImage[i+1,j-1:j+2].max() or
+                   outImage[i,j-1:j+2].max() or
+                   outImage[i-1,j-1:j+2].max()):
+
+                   outImage[i,j] = 1
+
+    return outImage 
 
 #---------TESTS---------
 #Test para probar el algoritmo de alteración del rango dinámico
@@ -502,7 +554,7 @@ def testAdjustIntensity():
 
 #Test para probar el algoritmo de ecualización de histograma
 def testEqualizeIntensity():
-    inImage = cv.imread('entradas/tucan.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/tucan.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
@@ -511,25 +563,42 @@ def testEqualizeIntensity():
 
     cv.imwrite('salidas/imagen_ecualizada.png',outImage)
 
-#Test para probar el suavizado Gaussiano bidimensional
-def testgaussianFilter():
-    inImage = cv.imread('entradas/chica.png',cv.IMREAD_GRAYSCALE)
+#Test para probar el funcionamiento del filtrado espacial mediante convolución
+def testFilterImage():
+    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
-    sigma = 2
+
+    kernel = np.array([
+        [1,1,1],
+        [1,1,1],
+        [1,1,1]
+    ])/9.0
+
+    outImage = filterImage(inImageNorm,kernel)
+
+    cv.imwrite('salidas/imagen_filtrada.jpg',np.uint8(outImage * 255))
+
+#Test para probar el suavizado Gaussiano bidimensional
+def testgaussianFilter():
+    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
+    inImageNorm = inImage / 255.0
+    sigma = 1
 
     outImage = gaussianFilter(inImageNorm,sigma)
 
-    cv.imwrite('salidas/imagen_Gauss.png',np.uint8(outImage * 255))
+    cv.imwrite('salidas/imagen_Gauss.png',np.uint8(outImage* 255))
 
 #Test para probar el filtro de medianas
 def testMedianFilter():
-    inImage = cv.imread('entradas/ruidoimpulsional.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
-    filterSize = 3
+    filterSize = 7
 
     outImage = medianFilter(inImageNorm,filterSize)
 
@@ -650,13 +719,14 @@ def normalizeSobel(inImage):
 
     return normalized_image
 
+#Test para probar el cálculo de gradiente de una imagen
 def testGradientImage():
-    inImage = cv.imread('entradas/chica2.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/circles.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255
 
-    operator = 'Sobel'
+    operator = 'CentralDiff'
 
     gx,gy = gradientImage(inImageNorm,operator)
 
@@ -666,21 +736,35 @@ def testGradientImage():
     cv.imwrite('salidas/imagen_gy_' + operator + '.png',gy * 255)
     cv.imwrite('salidas/imagen_magnitud_' + operator + '.png',outImage * 255)
 
+#Test para probar el filtro Laplaciano de Gaussiano
 def testLoG():
-    inImage = cv.imread('entradas/circles.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = normalizeImage(inImage)
 
-    outImage = LoG(inImageNorm,1.5)
+    outImage = LoG(inImageNorm,0.8)
 
     cv.imwrite('salidas/imagen_LoG.png',outImage * 255) 
 
+#Test para probar el detector de bordes de canny
+def testCanny():
+    inImage = cv.imread('entradas/matricula.png',cv.IMREAD_GRAYSCALE)
+    assert inImage is not None, "Error: No se pudo cargar la imágen"
+
+    inImageNorm = inImage / 255
+
+    outImage = edgeCanny(inImageNorm,1.4,0.3,0.7)
+
+    cv.imwrite('salidas/imagen_Canny.png',outImage * 255) 
+
 def main():
 
-    testAdjustIntensity()
+    # testAdjustIntensity()
 
     # testEqualizeIntensity()
+
+    # testFilterImage()
 
     # testgaussianFilter()
     
@@ -699,6 +783,8 @@ def main():
     # testGradientImage()
 
     # testLoG()
+
+    testCanny()
     
 
 
