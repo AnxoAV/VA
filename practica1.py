@@ -61,8 +61,8 @@ def gaussKernel1D(sigma):
     centro = (N - 1) // 2
 
     for i in range(N):
-        #kernel[i] = np.exp(-(i - centro) ** 2) / (2 * sigma **2)  PREGUNTAR
-        kernel[i] = (1.0 / (math.sqrt(2 * math.pi * sigma))) * math.exp(-((i-centro) ** 2)) / (2 * sigma ** 2)
+        #kernel[i] = np.exp(-(i - centro) ** 2) / (2 * sigma **2) 
+        kernel[i] = (1.0 / (math.sqrt(2 * math.pi) * sigma)) * math.exp((-((i-centro) ** 2)) / (2 * sigma ** 2))
 
     kernel /= np.sum(kernel)
 
@@ -403,8 +403,8 @@ def hit_or_miss(inImage, objSEj, bgSE, center = []):
 
     inImageComp = getComp(inImage)
 
-    hit = getComp(erode(inImageComp,objSEj,[0,1]))
-    miss = erode(inImage,objSEj,[1,0])
+    hit = getComp(erode(inImageComp,objSEj,center))
+    miss = erode(inImage,objSEj,center)
 
     outImage = intersec(hit,miss)
 
@@ -480,9 +480,9 @@ def magnitud(gx,gy):
 def LoG(inImage, sigma):
 
     kernel = np.array([
-        [0,-1,0],
-        [-1,4,-1],
-        [0,-1,0]
+        [0,1,0],
+        [1,-4,1],
+        [0,1,0]
     ])
     
     tmpImage = gaussianFilter(inImage,sigma)
@@ -532,9 +532,9 @@ def edgeCanny(inImage,sigma,tlow,thigh):
     for i in range(1, outImage.shape[0] - 1):
         for j in range(1 , outImage.shape[1] - 1):
             if weak[i,j]:
-                if(outImage[i+1,j-1:j+2].max() or
-                   outImage[i,j-1:j+2].max() or
-                   outImage[i-1,j-1:j+2].max()):
+                if(outImage[i+1,j-1:j+1].max() or
+                   outImage[i,j-1:j+1].max() or
+                   outImage[i-1,j-1:j+1].max()):
 
                    outImage[i,j] = 1
 
@@ -582,11 +582,11 @@ def testFilterImage():
 
 #Test para probar el suavizado Gaussiano bidimensional
 def testgaussianFilter():
-    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
-    sigma = 1
+    sigma = 2
 
     outImage = gaussianFilter(inImageNorm,sigma)
 
@@ -624,7 +624,7 @@ def testDilate():
 
 #Test para probar la dilatación en una imagen
 def testErode():
-    inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/image.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
@@ -726,7 +726,7 @@ def testGradientImage():
 
     inImageNorm = inImage / 255
 
-    operator = 'CentralDiff'
+    operator = 'Sobel'
 
     gx,gy = gradientImage(inImageNorm,operator)
 
@@ -754,7 +754,7 @@ def testCanny():
 
     inImageNorm = inImage / 255
 
-    outImage = edgeCanny(inImageNorm,1.4,0.3,0.7)
+    outImage = edgeCanny(inImageNorm,1,0.5,0.7)
 
     cv.imwrite('salidas/imagen_Canny.png',outImage * 255) 
 
