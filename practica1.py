@@ -100,79 +100,6 @@ def medianFilter(inImage,filterSize):
     
     return outImage
 
-def generarImagen():
-    matriz = np.array([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                       [0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0],
-                       [0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0],
-                       [0,0,1,1,1,1,1,0,0,0,0,1,1,1,0,0],
-                       [0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0],
-                       [0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,0],
-                       [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
-                       [0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0],
-                       [0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0],
-                       [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0],
-                       [0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0],
-                       [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
-                       [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
-                       [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
-                       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-                    ])
-
-    matriz2 = np.array([
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0],
-        [0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,1,1,0,0,0,0,1,0],
-        [0,0,0,0,0,0,0,0,1,0,0,0,1,1,1,0],
-        [0,0,0,1,1,1,1,0,1,0,0,1,1,1,0,0],
-        [0,0,1,1,1,1,0,1,1,1,1,1,1,0,0,0],
-        [0,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0],
-        [0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0],
-        [0,1,0,0,0,0,1,0,1,1,0,0,0,0,0,0],
-        [0,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
-        [0,1,1,0,0,0,0,1,1,1,0,1,0,0,0,0],
-        [0,1,1,1,0,0,0,1,1,0,0,0,0,0,0,0],
-        [0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    ])
-
-    matriz3 = np.array([
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0],
-        [0,0,1,1,1,1,0,0,1,1,1,1,1,1,0,0],
-        [0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0],
-        [0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
-        [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-        [0,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0],
-        [0,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0],
-        [0,0,0,1,0,0,0,0,0,1,1,1,1,0,0,0],
-        [0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
-        [0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
-        [0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
-        [0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-    ])
-
-    matriz4 = np.array([
-        [1,1,1,1,1,1,1],
-        [1,1,1,0,0,1,1],
-        [1,1,0,0,0,0,1],
-        [1,1,0,0,0,0,1],
-        [1,1,1,0,0,1,1],
-        [1,1,1,0,1,1,1],
-        [1,1,1,1,1,1,1]
-    ])
-
-    matriz = matriz * 255
-    matriz2 = matriz2 * 255
-    matriz3 = matriz3 * 255
-    matriz4 = matriz4 * 255
-    cv.imwrite('entradas/hit_or_miss2.png',matriz4,[cv.IMWRITE_PNG_COMPRESSION,0])
-
 #Función auxiliar para obtener grupos de tuplas en la función erode
 def agrupar_tuplas(lista, tamano_grupo):
     grupos = []
@@ -404,7 +331,7 @@ def hit_or_miss(inImage, objSEj, bgSE, center = []):
     inImageComp = getComp(inImage)
 
     hit = getComp(erode(inImageComp,objSEj,center))
-    miss = erode(inImage,objSEj,center)
+    miss = erode(inImage,bgSE,center)
 
     outImage = intersec(hit,miss)
 
@@ -510,18 +437,18 @@ def notMaxSupp(mag,direc):
 
 #Detector de bordes de Canny
 def edgeCanny(inImage,sigma,tlow,thigh):
-    #Paso 1: Aplicamos filtro gaussiano
+    # Paso 1: Aplicamos filtro gaussiano
     tmpImage = gaussianFilter(inImage,sigma)
 
-    #Paso 2: Obtener componentes gx y gy de la imagen y calcular la magnitud y la dirección
+    # Paso 2: Obtener componentes gx y gy de la imagen y calcular la magnitud y la dirección
     gx,gy = gradientImage(inImage,'Sobel')
     mag = np.sqrt(gx**2 + gy**2)
     direc = np.arctan2(gy,gx)
 
-    #Paso 3: Supresión no máxima
+    # Paso 3: Supresión no máxima
     mag_supp = notMaxSupp(mag,direc)
 
-    #Paso 4: Umbral de histéresis
+    # Paso 4: Umbral de histéresis
     strong = mag_supp > thigh 
     weak = (mag_supp >= tlow) & (mag_supp <= thigh)
 
@@ -559,7 +486,7 @@ def testEqualizeIntensity():
 
     inImageNorm = inImage / 255.0
 
-    outImage = equalizeIntensity(inImageNorm) #Se pueden cambiar los nBins poniendo un segundo parámetro, por defecto nBins = 256
+    outImage = equalizeIntensity(inImageNorm)
 
     cv.imwrite('salidas/imagen_ecualizada.png',outImage)
 
@@ -575,6 +502,10 @@ def testFilterImage():
         [1,1,1],
         [1,1,1]
     ])/9.0
+
+    kernel2 = np.ones((7,7))
+
+    kernel2 = kernel2 / 49
 
     outImage = filterImage(inImageNorm,kernel)
 
@@ -598,7 +529,7 @@ def testMedianFilter():
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
-    filterSize = 7
+    filterSize = 3
 
     outImage = medianFilter(inImageNorm,filterSize)
 
@@ -624,7 +555,7 @@ def testDilate():
 
 #Test para probar la dilatación en una imagen
 def testErode():
-    inImage = cv.imread('entradas/image.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
@@ -681,7 +612,7 @@ def testClosing():
 
 #Test para probar la transformada hit-or-miss
 def testHitOrMiss():
-    inImage = cv.imread('entradas/image.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/hit_or_miss2.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
     
     inImageNorm = inImage // 255
@@ -760,33 +691,31 @@ def testCanny():
 
 def main():
 
-    # testAdjustIntensity()
+    testAdjustIntensity()
 
-    # testEqualizeIntensity()
+    testEqualizeIntensity()
 
-    # testFilterImage()
+    testFilterImage()
 
-    # testgaussianFilter()
+    testgaussianFilter()
     
-    # testMedianFilter()
+    testMedianFilter()
 
-    # testErode()
+    testErode()
 
-    # testDilate()
+    testDilate()
 
-    # testOpening()
+    testOpening()
 
-    # testClosing()
+    testClosing()
     
-    # testHitOrMiss()
+    testHitOrMiss()
 
-    # testGradientImage()
+    testGradientImage()
 
-    # testLoG()
+    testLoG()
 
     testCanny()
     
-
-
 if __name__ == "__main__":
     main()
