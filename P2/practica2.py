@@ -1,8 +1,5 @@
 import numpy as np 
 import cv2 as cv 
-import matplotlib.pyplot as plt
-import math
-import scipy.signal
 import os
 
 #Alteración del rango dinámico
@@ -73,7 +70,28 @@ def detectarPupila(inImage):
             # Dibujar el contorno del círculo
             cv.circle(imagen_color, (i[0], i[1]), i[2], (0, 0, 255), 2)
 
-    return imagen_color
+    return imagen_color    
+
+# Lista de cosas probadas:
+#   1 - Umbralización con detección de contornos.
+#   2 - Umbralización adaptativa con detección de contornos.
+#   3 - Transformada de Hough y formar una elipse
+
+def detectarEsclerotica(inImage): 
+    
+    canny = cv.Canny(inImage,80,200)
+    _, thresh = cv.threshold(canny, 200, 255, cv.THRESH_BINARY_INV)
+    
+    kernel = np.ones((5,5))
+    opening = cv.morphologyEx(thresh, cv.MORPH_OPEN, kernel, iterations = 2)
+    
+    contornos, _ = cv.findContours(opening,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+    
+    outImage = cv.cvtColor(inImage.copy(), cv.COLOR_GRAY2BGR)
+    cv.drawContours(outImage,contornos, -1, (255, 0, 0))
+    
+    return outImage
+    
 
 def main():
     # inImage = cv.imread("entradasp2/aevar1.bmp",cv.IMREAD_GRAYSCALE)
@@ -112,12 +130,12 @@ def main():
         inImage = cv.imread("entradas/" + name,cv.IMREAD_GRAYSCALE)
         assert inImage is not None, "Error: No se pudo cargar la imágen"
 
-        outImage = cv.Canny(inImage,50,150)
-
+    
         pupila = detectarPupila(inImage)
-
+        esclerotica = detectarEsclerotica(inImage)
 
         cv.imwrite("salidas/" + name ,pupila)
+        cv.imwrite("salidas/" + "esclerotica_" + name ,esclerotica)
 
         
     
