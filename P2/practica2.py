@@ -33,7 +33,7 @@ def detectarPupila(inImage):
 
     imagen_color = cv.cvtColor(inImage, cv.COLOR_GRAY2BGR)
 
-    circulos_detectados = cv.HoughCircles(
+    pupila = cv.HoughCircles(
         imagen_suavizada,
         cv.HOUGH_GRADIENT,
         dp=1,  # Resolución acumulativa del detector
@@ -44,17 +44,36 @@ def detectarPupila(inImage):
         maxRadius=40  # Radio máximo del círculo
     )
 
+    iris = cv.HoughCircles(
+        imagen_suavizada,
+        cv.HOUGH_GRADIENT,
+        dp=1,  # Resolución acumulativa del detector
+        minDist=50,  # Distancia mínima entre los centros de los círculos
+        param1=100,  # Umbral del detector de bordes (Canny)
+        param2=35,  # Umbral del acumulador de Hough
+        minRadius=30,  # Radio mínimo del círculo
+        maxRadius=100 # Radio máximo del círculo
+    )
+
     # Convertir las coordenadas a enteros
-    if circulos_detectados is not None:
-        circulos_detectados = np.uint16(np.around(circulos_detectados))
+    if pupila is not None:
+        pupila = np.uint16(np.around(pupila))
 
         # Dibujar los círculos detectados
-        for i in circulos_detectados[0, :]:
+        for i in pupila[0, :]:
             # Dibujar el contorno del círculo
             cv.circle(imagen_color, (i[0], i[1]), i[2], (0, 255, 0), 2)
 
-    return imagen_color
+     # Convertir las coordenadas a enteros
+    if iris is not None:
+        iris = np.uint16(np.around(iris))
 
+        # Dibujar los círculos detectados
+        for i in iris[0, :]:
+            # Dibujar el contorno del círculo
+            cv.circle(imagen_color, (i[0], i[1]), i[2], (0, 0, 255), 2)
+
+    return imagen_color
 
 def main():
     # inImage = cv.imread("entradasp2/aevar1.bmp",cv.IMREAD_GRAYSCALE)
@@ -95,7 +114,10 @@ def main():
 
         outImage = cv.Canny(inImage,50,150)
 
-        cv.imwrite("salidas/" + name ,detectarPupila(inImage))
+        pupila = detectarPupila(inImage)
+
+
+        cv.imwrite("salidas/" + name ,pupila)
 
         
     
