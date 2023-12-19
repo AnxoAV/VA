@@ -330,8 +330,8 @@ def hit_or_miss(inImage, objSEj, bgSE, center = []):
 
     inImageComp = getComp(inImage)
 
-    hit = getComp(erode(inImageComp,objSEj,center))
-    miss = erode(inImage,bgSE,center)
+    hit = getComp(erode(inImage,objSEj,center))
+    miss = erode(inImageComp,bgSE,center)
 
     outImage = intersec(hit,miss)
 
@@ -475,13 +475,13 @@ def testAdjustIntensity():
 
     inImageNorm = inImage / 255.0
 
-    outImage = adjustIntensity(inImageNorm,[],[0,1])
+    outImage = adjustIntensity(inImageNorm,[],[0.1,0.9])
 
     cv.imwrite('salidas/imagen_rdinamico.png',np.uint8(outImage * 255))
 
 #Test para probar el algoritmo de ecualización de histograma
 def testEqualizeIntensity():
-    inImage = cv.imread('entradas/tucan.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/grays.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
@@ -513,7 +513,7 @@ def testFilterImage():
 
 #Test para probar el suavizado Gaussiano bidimensional
 def testgaussianFilter():
-    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
@@ -525,11 +525,11 @@ def testgaussianFilter():
 
 #Test para probar el filtro de medianas
 def testMedianFilter():
-    inImage = cv.imread('entradas/ruidoimpulsional.jpeg',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255.0
-    filterSize = 3
+    filterSize = 7
 
     outImage = medianFilter(inImageNorm,filterSize)
 
@@ -537,13 +537,13 @@ def testMedianFilter():
 
 #Test para probar la erosión en una imagen
 def testDilate():
-    inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/morph.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
+        [0,1,0],
         [1,1,1],
-        [1,1,1],
-        [1,1,1]
+        [0,1,0]
     ])
 
     center = [0,0]
@@ -555,13 +555,13 @@ def testDilate():
 
 #Test para probar la dilatación en una imagen
 def testErode():
-    inImage = cv.imread('entradas/dilatacion.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/morph.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     kernel = np.array([
+        [0,1,0],
         [1,1,1],
-        [1,1,1],
-        [1,1,1]
+        [0,1,0]
     ])
 
     center = [0,0]
@@ -612,19 +612,21 @@ def testClosing():
 
 #Test para probar la transformada hit-or-miss
 def testHitOrMiss():
-    inImage = cv.imread('entradas/hit_or_miss2.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/morph.png',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
     
     inImageNorm = inImage // 255
 
     objSEj = np.array([
-        [1,1],
-        [0,1]
+        [0,1,0],
+        [1,1,1],
+        [0,1,0]
     ],dtype=np.uint8)
 
     bgSE = np.array([
-        [0,0],
-        [1,0]
+        [1,0,1],
+        [0,0,0],
+        [1,0,1]
     ],dtype = np.uint8)
 
     outImage = hit_or_miss(inImageNorm,objSEj,bgSE)
@@ -680,12 +682,12 @@ def testLoG():
 
 #Test para probar el detector de bordes de canny
 def testCanny():
-    inImage = cv.imread('entradas/matricula.png',cv.IMREAD_GRAYSCALE)
+    inImage = cv.imread('entradas/chica2.jpeg',cv.IMREAD_GRAYSCALE)
     assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     inImageNorm = inImage / 255
 
-    outImage = edgeCanny(inImageNorm,1,0.5,0.7)
+    outImage = edgeCanny(inImageNorm,1.5,0.1,0.5)
 
     cv.imwrite('salidas/imagen_Canny.png',outImage * 255) 
 
