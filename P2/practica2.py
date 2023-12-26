@@ -140,6 +140,18 @@ def detectarBrillosPupila(inImage,centro_x,centro_y,radio):
     return brillos
 
     
+def detectarPestañas(inImage):
+    canny = cv.Canny(inImage,70,200)
+    
+    _,thresh = cv.threshold(canny,200,255,cv.THRESH_BINARY)
+    
+    contours, _ = cv.findContours(thresh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+    
+    outImage = cv.cvtColor(inImage.copy(),cv.COLOR_GRAY2BGR)
+    
+    cv.drawContours(outImage,contours, -1, (255,0,0),2)
+    
+    return outImage
 
 def main():
     images = os.listdir("entradas/")
@@ -153,10 +165,12 @@ def main():
     
         pupila,resultado = detectarPupila(inImage)
         esclerotica = detectarEsclerotica(inImage)
+        pestañas = detectarPestañas(inImage)
 
         # cv.imwrite("salidas/" + name ,pupila)
         cv.imwrite("salidas/" + "esclerotica_" + name ,esclerotica)
         # cv.imwrite("salidas/" + "brillos_" + name ,resultado)
+        # cv.imwrite("salidas/" + "pestaas_" + name, pestañas)
 
         
     
