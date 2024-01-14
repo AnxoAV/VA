@@ -2,11 +2,13 @@ import numpy as np
 import cv2 as cv 
 import os
 
-def detectarPupila(inImage):
+def detectarPupilaIris(inImage):
 
     imagen_suavizada = cv.medianBlur(inImage, 5)
 
-    imagen_color = cv.cvtColor(inImage, cv.COLOR_GRAY2BGR)
+    imagen_color_pupila = cv.cvtColor(inImage, cv.COLOR_GRAY2BGR)
+    imagen_color_iris = cv.cvtColor(inImage, cv.COLOR_GRAY2BGR)
+    
 
     pupila = cv.HoughCircles(
         imagen_suavizada,
@@ -37,8 +39,7 @@ def detectarPupila(inImage):
         # Dibujar los círculos detectados
         for i in pupila[0, :]:
             # Dibujar el contorno del círculo
-            cv.circle(imagen_color, (i[0], i[1]), i[2], (0, 255, 0), 2)
-            brillos = detectarBrillosPupila(inImage,i[0], i[1], i[2])
+            cv.circle(imagen_color_pupila, (i[0], i[1]), i[2], (0, 255, 0), 2)
             
      # Convertir las coordenadas a enteros
     if iris is not None:
@@ -47,112 +48,124 @@ def detectarPupila(inImage):
         # Dibujar los círculos detectados
         for i in iris[0, :]:
             # Dibujar el contorno del círculo
-            cv.circle(imagen_color, (i[0], i[1]), i[2], (0, 0, 255), 2)
+            cv.circle(imagen_color_iris, (i[0], i[1]), i[2], (0, 255, 0), 2)
 
-    return imagen_color,brillos   
+    return imagen_color_pupila,imagen_color_iris 
 
-# Lista de cosas probadas:
-#   1 - Umbralización con detección de contornos.
-#   2 - Umbralización adaptativa con detección de contornos.
-#   3 - Transformada de Hough y formar una elipse
+def detectarBrillosPupila(inImage):    
+    cv.GaussianBlur(inImage,(5,5),0)
+    contraste = np.array(255/np.log (1 + np.max(inImage))*np.log(1+inImage))
+    contraste_pupila = np.logical_not(np.where(contraste > 160, 1, 0)).astype(np.uint8)
+    
+    contornos_brillos = []
+    
+    contornos, _ = cv.findContours(contraste_pupila, cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+    
+    for c in contornos:
+        if cv.contourArea(c) < 500:
+            cv.drawContours(contraste_pupila,[c], 0, 255, 1)
+
+    contornos_brillos.append(contraste_pupila)
+
+    brillos = cv.bitwise_or(contornos_brillos[0], inImage)
+
+    return brillos
+    
+def detectarPestañas(inImage):
+    cv.GaussianBlur(inImage, (5, 5), 0)
+    
+    canny = cv.Canny(inImage, 50, 150)
+    contornos, _ = cv.findContours(canny, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contornos_pestanas = [c for c in contornos if cv.contourArea(c) < 150]
+    
+    pestanas = cv.cvtColor(inImage.copy(),cv.COLOR_GRAY2BGR)
+    cv.drawContours(pestanas, contornos_pestanas, -1, (255, 255, 255), 2)
+    
+    return pestanas
+    
+    # sobel_x = cv.Sobel(inImage, cv.CV_64F, 1, 0, ksize=3)
+    # sobel_y = cv.Sobel(inImage, cv.CV_64F, 0, 1, ksize=3)
+    # magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
+    # magnitude = np.uint8(magnitude)
+    # _, binary_image = cv.threshold(magnitude, 160, 255, cv.THRESH_BINARY)
+    # contours, _ = cv.findContours(binary_image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    # pestanas = inImage.copy()
+    # cv.drawContours(pestanas,contours,-1,255,2)
+    
+    # return pestanas
 
 def detectarEsclerotica(inImage): 
+    # imagen_suavizada = cv.medianBlur(inImage, 5)
+    # imagen_original = inImage.copy()
     
-    # canny = cv.Canny(inImage,20,200)
-    # _, thresh = cv.threshold(canny, 200, 255, cv.THRESH_BINARY_INV)
+    # iris = cv.HoughCircles(imagen_suavizada,
+    #                        cv.HOUGH_GRADIENT,
+    #                        dp=1, 
+    #                        minDist=50, 
+    #                        param1=100, 
+    #                        param2=35, 
+    #                        minRadius=30, 
+    #                        maxRadius=100)
     
-    # kernel = np.ones((5,5))
-    # opening = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
-    
-    # contornos, _ = cv.findContours(opening,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-    
-    # outImage = cv.cvtColor(inImage.copy(), cv.COLOR_GRAY2BGR)
-    # cv.drawContours(outImage,contornos, -1, (255, 0, 0))
-    
-    #--------------------------------------------------------------------------
-    
-    # _, thresh = cv.threshold(inImage, 200, 255, cv.THRESH_BINARY_INV)
-    
-    # contornos, _ = cv.findContours(thresh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-    
-    # mascara_pestanas = np.zeros_like(inImage)
-    
-    # cv.drawContours(mascara_pestanas, contornos, -1, (255), thickness=cv.FILLED)
-    
-    # mascara_no_pestanas = cv.bitwise_not(mascara_pestanas)
-    
-    # resultado = cv.bitwise_and(inImage, inImage, mask=mascara_no_pestanas)
-    
-    # canny = cv.Canny(resultado,90,200)
-    
-    # -----------------------------------------------------
-    
-    # image_blur = cv.GaussianBlur(inImage,(5,5),0)
-    
-    # sobelx = cv.Sobel(image_blur,cv.CV_64F,1,0,ksize = 5)
-    # sobely = cv.Sobel(image_blur,cv.CV_64F,0,1,ksize = 5)
-    # edges = np.sqrt(sobelx**2 + sobely**2)
-    
+    # if iris is not None:
+    #     iris_contorno = np.uint16(np.around(iris))
+    #     mask_iris = np.zeros_like(imagen_suavizada)
+        
+    #     for i in iris_contorno[0, :]:
+    #         cv.circle(mask_iris, (i[0], i[1]), i[2], (255), 2)
+            
+    #     mask_alrededor_iris = cv.dilate(mask_iris, None, iterations=2)
 
+    #     mask_esclerotica = cv.bitwise_not(mask_alrededor_iris)
+
+    #     region_esclerotica = cv.bitwise_and(imagen_suavizada, imagen_suavizada, mask=mask_esclerotica)
+
+    #     _, esclerotica_umbralizada = cv.threshold(region_esclerotica, 170, 255, cv.THRESH_BINARY)
+
+    #     contornos, _ = cv.findContours(esclerotica_umbralizada, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    #     for contorno in contornos:
+    #         cv.drawContours(imagen_original, [contorno], 0, (0, 255, 0), 2)
+            
+    # return imagen_original
     
-    # _, thresholded = cv.threshold(edges, 50, 255, cv.THRESH_BINARY)
-    # contours, _ = cv.findContours(thresholded.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    #----------------------------------------K-MEANS----------------------------------
+    
+    # image_blur = cv.GaussianBlur(inImage,(7,7),0)
+    # img_eq = cv.equalizeHist(image_blur)
+    # img_filtered = cv.bilateralFilter(img_eq, 9, 75, 75)
+    # img_float32 = np.float32(img_filtered)
+    # img_flat = img_float32.flatten().reshape((-1, 1))
+    # criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+    # k = 2
+
+    # _, labels, centers = cv.kmeans(img_flat, k, None, criteria, 10, cv.KMEANS_RANDOM_CENTERS)
+    # labels = labels.reshape(image_blur.shape)
+    
+    # binary_img = np.uint8(labels == 1) * 255
+    
+    # contours, _ = cv.findContours(binary_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    
     # largest_contour = max(contours, key=cv.contourArea)
     
     # img_result = cv.drawContours(inImage.copy(), [largest_contour], -1, (0, 255, 0), 2)
     
-    # -------------------------------
+    # return img_result
     
-    image_blur = cv.GaussianBlur(inImage,(7,7),0)
-    img_eq = cv.equalizeHist(image_blur)
-    img_filtered = cv.bilateralFilter(img_eq, 9, 75, 75)
-    img_float32 = np.float32(img_filtered)
-    img_flat = img_float32.flatten().reshape((-1, 1))
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-    k = 2
+    #------------------------------------Umbralización adaptativa-------------------------
+    _, umbral = cv.threshold(inImage,240, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    
+    kernel = np.ones((5, 5), np.uint8)
+    umbral = cv.morphologyEx(umbral, cv.MORPH_OPEN, kernel, iterations=2)
+    
+    contornos, _ = cv.findContours(umbral, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contornos_filtrados = [contorno for contorno in contornos if cv.contourArea(contorno) > 500]
+    
+    outImage = inImage.copy()
+    cv.drawContours(outImage, contornos_filtrados, -1, (255, 255, 255), 2)
 
-    _, labels, centers = cv.kmeans(img_flat, k, None, criteria, 10, cv.KMEANS_RANDOM_CENTERS)
-    labels = labels.reshape(image_blur.shape)
-    
-    binary_img = np.uint8(labels == 1) * 255
-    
-    contours, _ = cv.findContours(binary_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    
-    largest_contour = max(contours, key=cv.contourArea)
-    
-    img_result = cv.drawContours(inImage.copy(), [largest_contour], -1, (0, 255, 0), 2)
-
-    
-    return img_result
-
-def detectarBrillosPupila(inImage,centro_x,centro_y,radio):
-    
-    mascara_pupila = np.zeros_like(inImage)
-    cv.circle(mascara_pupila, (centro_x, centro_y), radio, (255), thickness=cv.FILLED)
-    region_pupila = cv.bitwise_and(inImage, mascara_pupila)
-    _, thresh = cv.threshold(region_pupila, 200, 255, cv.THRESH_BINARY)
-    contornos, _ = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    mascara_brillos = cv.cvtColor(inImage.copy(), cv.COLOR_GRAY2BGR)
-    cv.drawContours(mascara_brillos, contornos, -1, (0,0,255), thickness=cv.FILLED)
-    mascara_brillos_color = cv.resize(mascara_brillos, (inImage.shape[1], inImage.shape[0]))
-    brillos = cv.addWeighted(mascara_brillos, 1, mascara_brillos_color, 0.5, 0)
-    
-    return brillos
-
-    
-def detectarPestañas(inImage):
-    canny = cv.Canny(inImage,70,200)
-    
-    _,thresh = cv.threshold(canny,200,255,cv.THRESH_BINARY)
-    
-    contours, _ = cv.findContours(thresh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
-    
-    outImage = cv.cvtColor(inImage.copy(),cv.COLOR_GRAY2BGR)
-    
-    cv.drawContours(outImage,contours, -1, (255,0,0),2)
-    
     return outImage
 
+   
 def main():
     images = os.listdir("entradas/")
 
@@ -163,16 +176,16 @@ def main():
         assert inImage is not None, "Error: No se pudo cargar la imágen"
 
     
-        pupila,resultado = detectarPupila(inImage)
+        pupila,iris = detectarPupilaIris(inImage)
+        brillos = detectarBrillosPupila(inImage)
         esclerotica = detectarEsclerotica(inImage)
         pestañas = detectarPestañas(inImage)
 
-        # cv.imwrite("salidas/" + name ,pupila)
-        cv.imwrite("salidas/" + "esclerotica_" + name ,esclerotica)
-        # cv.imwrite("salidas/" + "brillos_" + name ,resultado)
-        # cv.imwrite("salidas/" + "pestaas_" + name, pestañas)
+        cv.imwrite("pupila/" + name ,pupila)
+        cv.imwrite("iris/" + name ,iris)
+        cv.imwrite("esclerotica/" + "esclerotica_" + name ,esclerotica)
+        cv.imwrite("artefactos/" + "brillos_" + name ,brillos)
+        cv.imwrite("artefactos/" + "pestanas_" + name, pestañas)
 
-        
-    
 if __name__ == "__main__":
     main()
